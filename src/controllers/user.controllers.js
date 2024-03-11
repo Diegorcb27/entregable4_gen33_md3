@@ -113,6 +113,55 @@ const getLoggedUser=catchError(async(req, res)=>{
     return res.json(req.user)
 })
 
+const reset_password=catchError(async(req, res)=>{
+    const {email, frontBaseUrl}=req.body
+    const user= await User.findOne({where: {email: email}})
+    if(!user) return res.status(401).json({error: "email incorrecto"})
+    const code = require('crypto').randomBytes(32).toString('hex')
+    const link = `${frontBaseUrl}/${code}`
+
+    await EmailCode.create({
+        code: code, 
+        userId: user.id
+    })
+
+    await sendEmail({
+        to: email, // Email del receptor
+        subject: "Password reset", // asunto
+        html: `
+        <h1>HELLO ${user.firstName} ${user.lastName}</h1>
+    <a href="${link}">${link}</a>      
+        <p>Dale click para resetar tu contraseña</p>
+        `// texto
+    })
+
+return res.sendStatus(200)
+
+})
+
+
+const changePassword=catchError(async(req, res)=>{
+    const {password}=req.body
+    const {code}=req.params  //codigo para verificar el usuario
+
+    const emailCode = await EmailCode.findOne({   //almacena el codigo del usuario del email
+        where: {code}
+    }) 
+
+    if(!emailCode) return res.status(401).json({message: "este codigo no es valido"})
+    const encriptedPassword = await bcrypt.hash(password, 10);
+
+    await User.update(
+    {password: encriptedPassword},
+    {where: {id: emailCode.userId}}
+    ) 
+
+
+    await emailCode.destroy()
+
+    return res.sendStatus(200)
+})
+
 module.exports = {
     getAll,
     create,
@@ -121,5 +170,7 @@ module.exports = {
     update,
     verifyEmail,
     login,
-    getLoggedUser
+    getLoggedUser,
+    reset_password,
+    changePassword
 }

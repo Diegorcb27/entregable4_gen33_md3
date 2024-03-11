@@ -1,4 +1,4 @@
-const { getAll, create, getOne, remove, update, verifyEmail, login, getLoggedUser} = require('../controllers/user.controllers');
+const { getAll, create, getOne, remove, update, verifyEmail, login, getLoggedUser, reset_password, changePassword} = require('../controllers/user.controllers');
 const express = require('express');
 
 const userRouter = express.Router();
@@ -17,6 +17,15 @@ userRouter.route("/users/login")
 
 userRouter.route("/users/me")
  .get(verifyJWT, getLoggedUser)
+
+ userRouter.route("/users/reset_password")
+    .post(reset_password)
+
+
+userRouter.route("/users/reset_password/:code")
+    .post(changePassword)
+
+    
     
 userRouter.route('/users/:id')
     .get(verifyJWT, getOne)
